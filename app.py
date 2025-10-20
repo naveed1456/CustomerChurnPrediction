@@ -100,7 +100,8 @@ def main():
     if not df.empty:
         y_pred = model.predict(df)
         result = "Churn" if y_pred[0] == 1 else "Not Churn"
-        st.success(f"Prediction: **{result}**")
+        color = "red" if result == "Churn" else "green"
+        st.markdown(f"<h3 style='color:{color};'>Prediction: {result}</h3>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
