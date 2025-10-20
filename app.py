@@ -4,7 +4,7 @@ import joblib
 
 st.set_page_config(page_title="Churn Predictor", page_icon="📉", layout="centered")
 
-# --- CSS to emphasize Predict button ---
+# --- CSS for styling ---
 st.markdown("""
 <style>
 div.stButton > button, div.stForm form button {
@@ -46,7 +46,6 @@ def load_model(path="best_churn_model.joblib"):
         return None, f"Couldn't load model: {e}"
 
 def make_form():
-    st.subheader("Single Prediction")
     with st.form("single_form"):
         c1, c2 = st.columns(2)
         v = {}
@@ -90,11 +89,6 @@ def make_form():
         return pd.DataFrame([v], columns=FEATURE_ORDER)
     return pd.DataFrame(columns=FEATURE_ORDER)
 
-def score_df(model, df):
-    proba = model.predict_proba(df)[:,1] if hasattr(model, "predict_proba") else None
-    pred = model.predict(df)
-    return pred, proba
-
 def main():
     st.title("Customer Churn Predictor")
     model, err = load_model()
@@ -102,33 +96,11 @@ def main():
         st.error(err)
         st.stop()
 
-    tab1, tab2 = st.tabs(["🔹 Single Prediction", "📦 Batch (CSV)"])
-
-    with tab1:
-        df = make_form()
-        if not df.empty:
-            y_pred, y_proba = score_df(model, df)
-            st.success(f"Prediction: {int(y_pred[0])} (1 = churn, 0 = no churn)")
-            if y_proba is not None:
-                st.info(f"Churn Probability: {y_proba[0]:.4f}")
-
-    with tab2:
-        st.write("Upload a CSV that already matches the expected encoded columns:")
-        st.code(", ".join(FEATURE_ORDER))
-        file = st.file_uploader("Upload CSV", type=["csv"])
-        if file:
-            df = pd.read_csv(file)
-            missing = [c for c in FEATURE_ORDER if c not in df.columns]
-            if missing:
-                st.error(f"Missing columns: {missing}")
-            else:
-                df = df[FEATURE_ORDER]
-                y_pred, y_proba = score_df(model, df)
-                df['churn_pred'] = y_pred
-                if y_proba is not None:
-                    df['churn_proba'] = y_proba
-                st.dataframe(df.head(20), use_container_width=True)
-                st.download_button("Download Predictions", df.to_csv(index=False), "predictions.csv")
+    df = make_form()
+    if not df.empty:
+        y_pred = model.predict(df)
+        result = "Churn" if y_pred[0] == 1 else "Not Churn"
+        st.success(f"Prediction: **{result}**")
 
 if __name__ == "__main__":
     main()
